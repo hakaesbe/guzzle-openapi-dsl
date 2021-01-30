@@ -1,0 +1,13 @@
+#!/usr/bin/env php
+<?php
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// Create the Application
+$application = new Symfony\Component\Console\Application();
+
+// Register all Commands
+$application->add(new App\Command\GuzzleOpenAPIConverter());
+
+// Run it
+$application->run();
