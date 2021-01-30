@@ -159,9 +159,10 @@ final class GuzzleOpenAPIConverter extends Command
     private static function parseTopLevelAttributes(array $document)
     : void
     {
-        self::$name = (isset($document['info']['title'])) ? $document['info']['title'] : '';
-        self::$apiVersion = (isset($document['info']['version'])) ? $document['info']['version'] : '';
+        self::$name         = (isset($document['info']['title'])) ? $document['info']['title'] : '';
+        self::$apiVersion   = (isset($document['info']['version'])) ? $document['info']['version'] : '';
         self::$_description = (isset($document['info']['description'])) ? $document['info']['description'] : '';
+        self::$baseUrl      = (isset($document['servers'][0]['url'])) ? $document['servers'][0]['url'] : '';
     }
 
     /**
