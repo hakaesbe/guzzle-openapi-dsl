@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use JetBrains\PhpStorm\Pure;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -129,22 +128,31 @@ final class GuzzleOpenAPIConverter extends Command
      *
      * @return bool
      */
-    #[Pure] private function checkDocument(array $document)
+    private function checkDocument(array $document)
     : bool
     {
 
         /** check type */
         if (!is_array($document) || count($document) === 0) {
+            self::$output->write("<error>Invalid openAPI document: content cannot be parsed</error>");
             return false;
         }
 
         /** check version */
         if (!isset($document['openapi']) || $document['openapi'] < 3) {
+            self::$output->write("<error>Invalid openAPI document: incompatible version detected</error>");
             return false;
         }
 
         /** check paths */
         if (!isset($document['paths']) || count($document['paths']) === 0) {
+            self::$output->write("<error>Invalid openAPI document: missing paths part</error>");
+            return false;
+        }
+
+        /** check components */
+        if (!isset($document['components']['schemas']) || count($document['components']['schemas']) === 0) {
+            self::$output->write("<error>Invalid openAPI document: missing components/schemas part</error>");
             return false;
         }
 
@@ -263,7 +271,41 @@ final class GuzzleOpenAPIConverter extends Command
     private function parseModels(array $document)
     : void
     {
+        foreach ($document['components']['schemas'] as $refName => $ref) {
+            foreach ($ref['properties'] as &$property) {
+                $property = $this->parseRecursiveItem($property);
+            }
+            self::$models[$this->convertRefToModel($refName)] = [
+                'type'       => $ref['type'],
+                'properties' => $ref['properties'],
+            ];
+        }
+    }
 
+    /**
+     * @param array $item
+     *
+     * @return array
+     */
+    private function parseRecursiveItem(array $item)
+    : array
+    {
+        if (isset($item['example'])) {
+            unset($item['example']);
+        }
+        if (isset($item['format'])) {
+            unset($item['format']);
+        }
+        if (isset($item['xml'])) {
+            unset($item['xml']);
+        }
+        if (isset($item['$ref'])) {
+            $item['$ref'] = $this->convertRefToModel($item['$ref']);
+        }
+        if (isset($item['items'])) {
+            $item['items'] = $this->parseRecursiveItem($item['items']);
+        }
+        return $item;
     }
 
     /**
@@ -282,7 +324,7 @@ final class GuzzleOpenAPIConverter extends Command
             'models'       => self::$models,
         ];
         $path                   = getcwd() . DIRECTORY_SEPARATOR . 'guzzle_service.json';
-        self::$output->write('Writing guzzle service describer to: ' . $path);
+        self::$output->write('<info>Writing guzzle service describer to: ' . $path . '</info>');
         file_put_contents($path, json_encode($guzzleServiceDescriber));
     }
 
