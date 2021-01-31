@@ -1,0 +1,24 @@
+{
+  "name": "hakaesbe/guzzle-openapi-dsl",
+  "description": "Provides an implementation of the Guzzle Command library that uses OpenAPI to describe web services.",
+  "type": "library",
+  "license": "GPL-3.0 License",
+  "authors": [
+    {
+      "name": "Julien Viard",
+      "email": "viard.julien@gmail.com",
+      "homepage": "https://github.com/hakaesbe"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "App\\": "src"
+    }
+  },
+  "require": {
+    "php": "^8.0",
+    "guzzlehttp/guzzle-services": "^1.2",
+    "symfony/console": "^5.2",
+    "symfony/yaml": "^5.2"
+  }
+}

@@ -1,0 +1,648 @@
+{
+  "name": "Swagger Petstore - OpenAPI 3.0",
+  "apiVersion": "1.0.6-SNAPSHOT",
+  "baseUrl": "https:\/\/petstore.swagger.io",
+  "basePath": "\/v3",
+  "_description": "This is a sample Pet Store Server based on the OpenAPI 3.0 specification.  You can find out more about\nSwagger at [http:\/\/swagger.io](http:\/\/swagger.io). In the third iteration of the pet store, we've switched to the design first approach!\nYou can now help us improve the API whether it's by making changes to the definition itself or to the code.\nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.\n\nSome useful links:\n- [The Pet Store repository](https:\/\/github.com\/swagger-api\/swagger-petstore)\n- [The source API definition for the Pet Store](https:\/\/github.com\/swagger-api\/swagger-petstore\/blob\/master\/src\/main\/resources\/openapi.yaml)",
+  "operations": {
+    "addPet": {
+      "name": "addPet",
+      "httpMethod": "POST",
+      "uri": "\/pet",
+      "responseModel": "Pet",
+      "notes": "Add a new pet to the store",
+      "summary": "Add a new pet to the store",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": [],
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 405,
+          "description": "Invalid input"
+        }
+      ]
+    },
+    "updatePet": {
+      "name": "updatePet",
+      "httpMethod": "PUT",
+      "uri": "\/pet",
+      "responseModel": "Pet",
+      "notes": "Update an existing pet",
+      "summary": "Update an existing pet",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": [],
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid ID supplied"
+        },
+        {
+          "code": 404,
+          "description": "Pet not found"
+        },
+        {
+          "code": 405,
+          "description": "Validation exception"
+        }
+      ]
+    },
+    "findPetsByStatus": {
+      "name": "findPetsByStatus",
+      "httpMethod": "GET",
+      "uri": "\/pet\/findByStatus",
+      "responseModel": null,
+      "notes": "Finds Pets by status",
+      "summary": "Finds Pets by status",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "status": {
+          "type": "string",
+          "location": "query",
+          "description": "Status values that need to be considered for filter",
+          "required": false
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid status value"
+        }
+      ]
+    },
+    "findPetsByTags": {
+      "name": "findPetsByTags",
+      "httpMethod": "GET",
+      "uri": "\/pet\/findByTags",
+      "responseModel": null,
+      "notes": "Finds Pets by tags",
+      "summary": "Finds Pets by tags",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "tags": {
+          "type": "array",
+          "location": "query",
+          "description": "Tags to filter by",
+          "required": false
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid tag value"
+        }
+      ]
+    },
+    "getPetById": {
+      "name": "getPetById",
+      "httpMethod": "GET",
+      "uri": "\/pet\/{petId}",
+      "responseModel": "Pet",
+      "notes": "Find pet by ID",
+      "summary": "Find pet by ID",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "petId": {
+          "type": "integer",
+          "location": "uri",
+          "description": "ID of pet to return",
+          "required": true
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid ID supplied"
+        },
+        {
+          "code": 404,
+          "description": "Pet not found"
+        }
+      ]
+    },
+    "updatePetWithForm": {
+      "name": "updatePetWithForm",
+      "httpMethod": "POST",
+      "uri": "\/pet\/{petId}",
+      "responseModel": null,
+      "notes": "Updates a pet in the store with form data",
+      "summary": "Updates a pet in the store with form data",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "petId": {
+          "type": "integer",
+          "location": "uri",
+          "description": "ID of pet that needs to be updated",
+          "required": true
+        },
+        "name": {
+          "type": "string",
+          "location": "query",
+          "description": "Name of pet that needs to be updated",
+          "required": false
+        },
+        "status": {
+          "type": "string",
+          "location": "query",
+          "description": "Status of pet that needs to be updated",
+          "required": false
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 405,
+          "description": "Invalid input"
+        }
+      ]
+    },
+    "deletePet": {
+      "name": "deletePet",
+      "httpMethod": "DELETE",
+      "uri": "\/pet\/{petId}",
+      "responseModel": null,
+      "notes": "Deletes a pet",
+      "summary": "Deletes a pet",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "api_key": {
+          "type": "string",
+          "location": "query",
+          "description": "",
+          "required": false
+        },
+        "petId": {
+          "type": "integer",
+          "location": "uri",
+          "description": "Pet id to delete",
+          "required": true
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid pet value"
+        }
+      ]
+    },
+    "uploadFile": {
+      "name": "uploadFile",
+      "httpMethod": "POST",
+      "uri": "\/pet\/{petId}\/uploadImage",
+      "responseModel": "ApiResponse",
+      "notes": "uploads an image",
+      "summary": "uploads an image",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "petId": {
+          "type": "integer",
+          "location": "uri",
+          "description": "ID of pet to update",
+          "required": true
+        },
+        "additionalMetadata": {
+          "type": "string",
+          "location": "query",
+          "description": "Additional Metadata",
+          "required": false
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": []
+    },
+    "getInventory": {
+      "name": "getInventory",
+      "httpMethod": "GET",
+      "uri": "\/store\/inventory",
+      "responseModel": null,
+      "notes": "Returns pet inventories by status",
+      "summary": "Returns pet inventories by status",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": [],
+      "additionalParameters": null,
+      "errorResponses": []
+    },
+    "placeOrder": {
+      "name": "placeOrder",
+      "httpMethod": "POST",
+      "uri": "\/store\/order",
+      "responseModel": "Order",
+      "notes": "Place an order for a pet",
+      "summary": "Place an order for a pet",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": [],
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 405,
+          "description": "Invalid input"
+        }
+      ]
+    },
+    "getOrderById": {
+      "name": "getOrderById",
+      "httpMethod": "GET",
+      "uri": "\/store\/order\/{orderId}",
+      "responseModel": "Order",
+      "notes": "Find purchase order by ID",
+      "summary": "Find purchase order by ID",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "orderId": {
+          "type": "integer",
+          "location": "uri",
+          "description": "ID of order that needs to be fetched",
+          "required": true
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid ID supplied"
+        },
+        {
+          "code": 404,
+          "description": "Order not found"
+        }
+      ]
+    },
+    "deleteOrder": {
+      "name": "deleteOrder",
+      "httpMethod": "DELETE",
+      "uri": "\/store\/order\/{orderId}",
+      "responseModel": null,
+      "notes": "Delete purchase order by ID",
+      "summary": "Delete purchase order by ID",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "orderId": {
+          "type": "integer",
+          "location": "uri",
+          "description": "ID of the order that needs to be deleted",
+          "required": true
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid ID supplied"
+        },
+        {
+          "code": 404,
+          "description": "Order not found"
+        }
+      ]
+    },
+    "createUser": {
+      "name": "createUser",
+      "httpMethod": "POST",
+      "uri": "\/user",
+      "responseModel": null,
+      "notes": "Create user",
+      "summary": "Create user",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": [],
+      "additionalParameters": null,
+      "errorResponses": []
+    },
+    "createUsersWithListInput": {
+      "name": "createUsersWithListInput",
+      "httpMethod": "POST",
+      "uri": "\/user\/createWithList",
+      "responseModel": "User",
+      "notes": "Creates list of users with given input array",
+      "summary": "Creates list of users with given input array",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": [],
+      "additionalParameters": null,
+      "errorResponses": []
+    },
+    "loginUser": {
+      "name": "loginUser",
+      "httpMethod": "GET",
+      "uri": "\/user\/login",
+      "responseModel": null,
+      "notes": "Logs user into the system",
+      "summary": "Logs user into the system",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "username": {
+          "type": "string",
+          "location": "query",
+          "description": "The user name for login",
+          "required": false
+        },
+        "password": {
+          "type": "string",
+          "location": "query",
+          "description": "The password for login in clear text",
+          "required": false
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid username\/password supplied"
+        }
+      ]
+    },
+    "logoutUser": {
+      "name": "logoutUser",
+      "httpMethod": "GET",
+      "uri": "\/user\/logout",
+      "responseModel": null,
+      "notes": "Logs out current logged in user session",
+      "summary": "Logs out current logged in user session",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": [],
+      "additionalParameters": null,
+      "errorResponses": []
+    },
+    "getUserByName": {
+      "name": "getUserByName",
+      "httpMethod": "GET",
+      "uri": "\/user\/{username}",
+      "responseModel": "User",
+      "notes": "Get user by user name",
+      "summary": "Get user by user name",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "username": {
+          "type": "string",
+          "location": "uri",
+          "description": "The name that needs to be fetched. Use user1 for testing. ",
+          "required": true
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid username supplied"
+        },
+        {
+          "code": 404,
+          "description": "User not found"
+        }
+      ]
+    },
+    "updateUser": {
+      "name": "updateUser",
+      "httpMethod": "PUT",
+      "uri": "\/user\/{username}",
+      "responseModel": null,
+      "notes": "Update user",
+      "summary": "Update user",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "username": {
+          "type": "string",
+          "location": "uri",
+          "description": "name that need to be deleted",
+          "required": true
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": []
+    },
+    "deleteUser": {
+      "name": "deleteUser",
+      "httpMethod": "DELETE",
+      "uri": "\/user\/{username}",
+      "responseModel": null,
+      "notes": "Delete user",
+      "summary": "Delete user",
+      "documentationUrl": null,
+      "deprecated": false,
+      "data": [],
+      "parameters": {
+        "username": {
+          "type": "string",
+          "location": "uri",
+          "description": "The name that needs to be deleted",
+          "required": true
+        }
+      },
+      "additionalParameters": null,
+      "errorResponses": [
+        {
+          "code": 400,
+          "description": "Invalid username supplied"
+        },
+        {
+          "code": 404,
+          "description": "User not found"
+        }
+      ]
+    }
+  },
+  "models": {
+    "Order": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "petId": {
+          "type": "integer"
+        },
+        "quantity": {
+          "type": "integer"
+        },
+        "shipDate": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "description": "Order Status",
+          "enum": [
+            "placed",
+            "approved",
+            "delivered"
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Customer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "username": {
+          "type": "string"
+        },
+        "address": {
+          "type": "array",
+          "items": {
+            "$ref": "Address"
+          }
+        }
+      }
+    },
+    "Address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        }
+      }
+    },
+    "Category": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "username": {
+          "type": "string"
+        },
+        "firstName": {
+          "type": "string"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "userStatus": {
+          "type": "integer",
+          "description": "User Status"
+        }
+      }
+    },
+    "Tag": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Pet": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "category": {
+          "$ref": "Category"
+        },
+        "photoUrls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "Tag"
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "pet status in the store",
+          "enum": [
+            "available",
+            "pending",
+            "sold"
+          ]
+        }
+      }
+    },
+    "ApiResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
