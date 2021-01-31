@@ -17,6 +17,12 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class GuzzleOpenAPIConverter extends Command
 {
+    /** @var string */
+    const REF_SCHEMAS = 'schemas';
+
+    /** @var string */
+    const REF_PARAMETERS = 'parameters';
+
     /** @var \Symfony\Component\Console\Input\InputInterface|null */
     private static ?InputInterface $input = null;
 
@@ -151,9 +157,13 @@ final class GuzzleOpenAPIConverter extends Command
         }
 
         /** check components */
-        if (!isset($document['components']['schemas']) || count($document['components']['schemas']) === 0) {
+        if (!isset($document['components'][self::REF_SCHEMAS]) || count($document['components'][self::REF_SCHEMAS]) === 0) {
             self::$output->writeln("<error>Invalid openAPI document: missing components/schemas part</error>");
-            return false;
+        }
+
+        /** check components */
+        if (!isset($document['components'][self::REF_PARAMETERS]) || count($document['components'][self::REF_PARAMETERS]) === 0) {
+            self::$output->writeln("<info>Missing components/parameters part</info>");
         }
 
         return true;
@@ -190,6 +200,13 @@ final class GuzzleOpenAPIConverter extends Command
                 $parameters = [];
                 if (isset($pathItemObject['parameters'])) {
                     foreach ($pathItemObject['parameters'] as $pathItemObjectParameter) {
+                        /** detecting ref parameters */
+                        if (is_string($pathItemObjectParameter)) {
+                            $parameters[$operationId] = [
+                                '$ref' => $this->convertRefToModel($pathItemObjectParameter)
+                            ];
+                            continue;
+                        }
                         if (!isset($pathItemObjectParameter['schema']['type'])) {
                             self::$output->writeln("<error>Missing schema type $httpMethod $path</error>");
                             continue;
@@ -256,7 +273,12 @@ final class GuzzleOpenAPIConverter extends Command
     private function convertRefToModel(string $ref)
     : string
     {
-        $ref = str_replace('#/components/schemas/', '', $ref);
+        if (str_contains($ref, '#/components/' . self::REF_SCHEMAS . '/')) {
+            $ref = str_replace('#/components/' . self::REF_SCHEMAS . '/', '', $ref);
+        } elseif (str_contains($ref, '#/components/' . self::REF_PARAMETERS . '/')) {
+            $ref = str_replace('#/components/' . self::REF_PARAMETERS . '/', '', $ref);
+            $ref .= 'Parameter';
+        }
 
         return $ref;
     }
@@ -269,15 +291,28 @@ final class GuzzleOpenAPIConverter extends Command
     private function parseModels(array $document)
     : void
     {
-        foreach ($document['components']['schemas'] as $refName => $ref) {
-            if (isset($ref['properties'])) {
-                foreach ($ref['properties'] as &$property) {
-                    $property = $this->parseRecursiveItem($property);
+        foreach ([self::REF_SCHEMAS, self::REF_PARAMETERS] as $componentType) {
+            if (!isset($document['components'][$componentType])) {
+                continue;
+            }
+            foreach ($document['components'][$componentType] as $refName => $ref) {
+                $modelName = $refName;
+                if (self::REF_PARAMETERS === $componentType) {
+                    $modelName .= 'Parameter';
                 }
-                self::$models[$this->convertRefToModel($refName)] = [
-                    'type'       => $ref['type'],
-                    'properties' => $ref['properties'],
-                ];
+                foreach ($ref as &$property) {
+                    if (is_array($property)) {
+                        $property = $this->parseRecursiveItem($property);
+                    }
+                }
+                if (isset($ref['type']) && isset($ref['properties'])) {
+                    self::$models[$modelName] = [
+                        'type'       => $ref['type'],
+                        'properties' => $ref['properties'],
+                    ];
+                } else {
+                    self::$models[$modelName] = $ref;
+                }
             }
         }
     }
@@ -290,6 +325,11 @@ final class GuzzleOpenAPIConverter extends Command
     private function parseRecursiveItem(array $item)
     : array
     {
+        foreach ($item as &$subItem) {
+            if (is_array($subItem)) {
+                $subItem = $this->parseRecursiveItem($subItem);
+            }
+        }
         if (isset($item['example'])) {
             unset($item['example']);
         }
@@ -301,9 +341,6 @@ final class GuzzleOpenAPIConverter extends Command
         }
         if (isset($item['$ref'])) {
             $item['$ref'] = $this->convertRefToModel($item['$ref']);
-        }
-        if (isset($item['items'])) {
-            $item['items'] = $this->parseRecursiveItem($item['items']);
         }
         return $item;
     }
@@ -321,12 +358,10 @@ final class GuzzleOpenAPIConverter extends Command
     {
         $paths       = explode('/', $path);
         $paths       = array_filter($paths, function ($uriPart) {
-            return (!is_numeric($uriPart) && '' !== $uriPart && strpos($uriPart, '{') === false);
+            return (!is_numeric($uriPart) && '' !== $uriPart && !str_contains($uriPart, '{'));
         });
         $paths       = array_map(function ($uriPart) {
-            $uriPart = strtolower(trim(str_replace(['{', '}', '-', '_'], ['', '', ' ', ' '], $uriPart)));
-            $uriPart = ucwords($uriPart);
-            return str_replace(' ', '', $uriPart);
+            return $this->normalizeOperationId($uriPart);
         }, $paths);
         $operationId = strtolower($httpCode) . implode('', $paths);
         $i           = '';
@@ -342,6 +377,20 @@ final class GuzzleOpenAPIConverter extends Command
         self::$output->writeln("<info>Missing operationId for: $httpCode $path now using operationId $operationId</info>");
 
         return $operationId;
+    }
+
+    /**
+     * @param string $operationId
+     *
+     * @return string
+     */
+    private function normalizeOperationId(string $operationId)
+    : string
+    {
+        $operationId = strtolower(trim(str_replace(['{', '}', '-', '_'], ['', '', ' ', ' '], $operationId)));
+        $operationId = ucwords($operationId);
+
+        return str_replace(['', "\n", "\t"], '', $operationId);
     }
 
     /**
