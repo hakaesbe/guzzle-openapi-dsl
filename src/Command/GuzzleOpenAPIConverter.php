@@ -58,6 +58,7 @@ final class GuzzleOpenAPIConverter extends Command
         $this->setName('convert-openapi');
         $this->setDescription('Convert openapi.yaml|json file to guzzle service describer.');
         $this->addArgument('path', InputArgument::REQUIRED, 'Path of the openapi file.');
+        $this->addArgument('baseUrl', InputArgument::OPTIONAL, 'Base url for endpoint.');
     }
 
     /**
@@ -180,7 +181,15 @@ final class GuzzleOpenAPIConverter extends Command
         self::$name         = (isset($document['info']['title'])) ? $document['info']['title'] : '';
         self::$apiVersion   = (isset($document['info']['version'])) ? $document['info']['version'] : '';
         self::$_description = (isset($document['info']['description'])) ? $document['info']['description'] : '';
-        self::$baseUrl      = (isset($document['servers'][0]['url'])) ? $document['servers'][0]['url'] : '';
+        $url                = (isset($document['servers'][0]['url'])) ? $document['servers'][0]['url'] : '';
+        if (str_starts_with($url, '/')) {
+            self::$basePath = $url;
+        } else {
+            self::$baseUrl = $url;
+        }
+        if (self::$input->hasArgument('baseUrl')) {
+            self::$baseUrl = (string) self::$input->getArgument('baseUrl');
+        }
     }
 
     /**
