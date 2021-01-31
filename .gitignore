@@ -2,4 +2,4 @@ composer.lock
 vendor/
 .idea
 /resources/
-guzzle_service.json
+/guzzle_service.json
