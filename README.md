@@ -5,4 +5,4 @@ Guzzle OpenAPI service description
 
 Simply run following command to convert example petstore file:
 
-`php bin/console convert-openapi ./examples/petstore.yaml  https://petstore.swagger.io`
+` php bin/console convert-openapi ./examples/petstore.json https://petstore3.swagger.io`

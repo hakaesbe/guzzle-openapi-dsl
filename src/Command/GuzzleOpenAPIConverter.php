@@ -24,6 +24,9 @@ final class GuzzleOpenAPIConverter extends BaseCommand
     private static string $name = '';
 
     /** @var string */
+    private static string $defaultResponseLocation = 'json';
+
+    /** @var string */
     private static string $apiVersion = '';
 
     /** @var string */
@@ -39,7 +42,15 @@ final class GuzzleOpenAPIConverter extends BaseCommand
     private static array $operations = [];
 
     /** @var array */
-    private static array $models = [];
+    private static array $models
+        = [
+            'getResponse' => [
+                'type'                 => 'object',
+                'additionalProperties' => [
+                    'location' => 'json'
+                ]
+            ]
+        ];
 
     /**
      * In this method setup command, description, and its parameters
@@ -93,7 +104,7 @@ final class GuzzleOpenAPIConverter extends BaseCommand
         if ('yaml' === $pathInfo['extension']) {
             $parsedContent = Yaml::parse($content);
         } else {
-            $parsedContent = json_decode($content);
+            $parsedContent = json_decode($content, true);
         }
 
         if (!$this->checkDocument($parsedContent)) {
@@ -204,8 +215,27 @@ final class GuzzleOpenAPIConverter extends BaseCommand
                     }
                 }
 
+                if (isset($pathItemObject['requestBody']['content'])) {
+                    foreach ($pathItemObject['requestBody']['content'] as $location => $content) {
+                        /** application/x-www-form-urlencoded */
+                        $location = 'body';
+                        if ('application/json' == $location) {
+                            $location = 'json';
+                        } elseif ('application/xml' == $location) {
+                            $location = 'xml';
+                        }
+                        if (isset($content['schema']['$ref'])) {
+                            $parameters['$ref'] = [
+                                '$ref'     => $this->convertRefToModel($content['schema']['$ref']),
+                                'location' => $location,
+                            ];
+                            break;
+                        }
+                    }
+                }
+
                 /** parse responses */
-                $responseModel  = null;
+                $responseModel  = 'getResponse';
                 $errorResponses = [];
                 if (isset($pathItemObject['responses'])) {
                     foreach ($pathItemObject['responses'] as $responseCode => $response) {
@@ -224,22 +254,19 @@ final class GuzzleOpenAPIConverter extends BaseCommand
                             }
                         }
                     }
-
                 }
 
                 self::$operations[$operationId] = [
-                    'name'                 => $operationId,
-                    'httpMethod'           => strtoupper($httpMethod),
-                    'uri'                  => $path,
-                    'responseModel'        => $responseModel,
-                    'notes'                => (isset($pathItemObject['summary'])) ? $pathItemObject['summary'] : null,
-                    'summary'              => (isset($pathItemObject['summary'])) ? $pathItemObject['summary'] : null,
-                    'documentationUrl'     => null,
-                    'deprecated'           => false,
-                    'data'                 => [],
-                    'parameters'           => $parameters,
-                    'additionalParameters' => null,
-                    'errorResponses'       => $errorResponses,
+                    'name'             => $operationId,
+                    'httpMethod'       => strtoupper($httpMethod),
+                    'uri'              => ('' != self::$basePath) ? rtrim(self::$basePath, '/') . '/' . ltrim($path, '/') : $path,
+                    'responseModel'    => $responseModel,
+                    'notes'            => (isset($pathItemObject['summary'])) ? $pathItemObject['summary'] : null,
+                    'summary'          => (isset($pathItemObject['summary'])) ? $pathItemObject['summary'] : null,
+                    'documentationUrl' => null,
+                    'deprecated'       => false,
+                    'parameters'       => $parameters,
+                    'errorResponses'   => $errorResponses,
                 ];
 
             }
@@ -289,10 +316,14 @@ final class GuzzleOpenAPIConverter extends BaseCommand
                         $property = $this->parseRecursiveItem($property);
                     }
                 }
+                if (!isset($ref['location'])) {
+                    $ref['location'] = self::$defaultResponseLocation;
+                }
                 if (isset($ref['type']) && isset($ref['properties'])) {
                     self::$models[$modelName] = [
                         'type'       => $ref['type'],
                         'properties' => $ref['properties'],
+                        'location'   => $ref['location'],
                     ];
                 } else {
                     self::$models[$modelName] = $ref;
