@@ -134,25 +134,25 @@ final class GuzzleOpenAPIConverter extends Command
 
         /** check type */
         if (!is_array($document) || count($document) === 0) {
-            self::$output->write("<error>Invalid openAPI document: content cannot be parsed</error>");
+            self::$output->writeln("<error>Invalid openAPI document: content cannot be parsed</error>");
             return false;
         }
 
         /** check version */
         if (!isset($document['openapi']) || $document['openapi'] < 3) {
-            self::$output->write("<error>Invalid openAPI document: incompatible version detected</error>");
+            self::$output->writeln("<error>Invalid openAPI document: incompatible version detected</error>");
             return false;
         }
 
         /** check paths */
         if (!isset($document['paths']) || count($document['paths']) === 0) {
-            self::$output->write("<error>Invalid openAPI document: missing paths part</error>");
+            self::$output->writeln("<error>Invalid openAPI document: missing paths part</error>");
             return false;
         }
 
         /** check components */
         if (!isset($document['components']['schemas']) || count($document['components']['schemas']) === 0) {
-            self::$output->write("<error>Invalid openAPI document: missing components/schemas part</error>");
+            self::$output->writeln("<error>Invalid openAPI document: missing components/schemas part</error>");
             return false;
         }
 
@@ -184,16 +184,14 @@ final class GuzzleOpenAPIConverter extends Command
 
         foreach ($document['paths'] as $path => $operations) {
             foreach ($operations as $httpMethod => $pathItemObject) {
-
-                // todo generate simple operation name when not provided
-                $operationId = (isset($pathItemObject['operationId'])) ? $pathItemObject['operationId'] : 'gen_' . uniqid();
+                $operationId = (isset($pathItemObject['operationId'])) ? $pathItemObject['operationId'] : $this->generateOperationId($httpMethod, $path);
 
                 /** parse parameters */
                 $parameters = [];
                 if (isset($pathItemObject['parameters'])) {
                     foreach ($pathItemObject['parameters'] as $pathItemObjectParameter) {
                         if (!isset($pathItemObjectParameter['schema']['type'])) {
-                            self::$output->write("<error>Missing schema type $httpMethod $path</error>");
+                            self::$output->writeln("<error>Missing schema type $httpMethod $path</error>");
                             continue;
                         }
                         $parameters[$operationId] = [
@@ -272,13 +270,15 @@ final class GuzzleOpenAPIConverter extends Command
     : void
     {
         foreach ($document['components']['schemas'] as $refName => $ref) {
-            foreach ($ref['properties'] as &$property) {
-                $property = $this->parseRecursiveItem($property);
+            if (isset($ref['properties'])) {
+                foreach ($ref['properties'] as &$property) {
+                    $property = $this->parseRecursiveItem($property);
+                }
+                self::$models[$this->convertRefToModel($refName)] = [
+                    'type'       => $ref['type'],
+                    'properties' => $ref['properties'],
+                ];
             }
-            self::$models[$this->convertRefToModel($refName)] = [
-                'type'       => $ref['type'],
-                'properties' => $ref['properties'],
-            ];
         }
     }
 
@@ -309,6 +309,42 @@ final class GuzzleOpenAPIConverter extends Command
     }
 
     /**
+     * Generate operation identifier.
+     *
+     * @param string $httpCode
+     * @param string $path
+     *
+     * @return string
+     */
+    private function generateOperationId(string $httpCode, string $path)
+    : string
+    {
+        $paths       = explode('/', $path);
+        $paths       = array_filter($paths, function ($uriPart) {
+            return (!is_numeric($uriPart) && '' !== $uriPart && strpos($uriPart, '{') === false);
+        });
+        $paths       = array_map(function ($uriPart) {
+            $uriPart = strtolower(trim(str_replace(['{', '}'], '', $uriPart)));
+            $uriPart = ucfirst($uriPart);
+            return $uriPart;
+        }, $paths);
+        $operationId = strtolower($httpCode) . implode('', $paths);
+        $i           = '';
+        while (array_key_exists($operationId . $i, self::$models)) {
+            if ('' === $i) {
+                $i = 1;
+            } else {
+                $i++;
+            }
+        }
+        $operationId = $operationId . $i;
+        self::$models[$operationId] = [];
+        self::$output->writeln("<info>Missing operationId for: $httpCode $path now using operationId $operationId</info>");
+
+        return $operationId;
+    }
+
+    /**
      * Write to file Guzzle service describer.
      */
     private function writeGuzzleServiceDescriber()
@@ -324,7 +360,7 @@ final class GuzzleOpenAPIConverter extends Command
             'models'       => self::$models,
         ];
         $path                   = getcwd() . DIRECTORY_SEPARATOR . 'guzzle_service.json';
-        self::$output->write('<info>Writing guzzle service describer to: ' . $path . '</info>');
+        self::$output->writeln('<info>Writing guzzle service describer to: ' . $path . '</info>');
         file_put_contents($path, json_encode($guzzleServiceDescriber));
     }
 
