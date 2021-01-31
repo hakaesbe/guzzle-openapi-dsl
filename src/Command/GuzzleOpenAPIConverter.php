@@ -324,9 +324,9 @@ final class GuzzleOpenAPIConverter extends Command
             return (!is_numeric($uriPart) && '' !== $uriPart && strpos($uriPart, '{') === false);
         });
         $paths       = array_map(function ($uriPart) {
-            $uriPart = strtolower(trim(str_replace(['{', '}'], '', $uriPart)));
-            $uriPart = ucfirst($uriPart);
-            return $uriPart;
+            $uriPart = strtolower(trim(str_replace(['{', '}', '-', '_'], ['', '', ' ', ' '], $uriPart)));
+            $uriPart = ucwords($uriPart);
+            return str_replace(' ', '', $uriPart);
         }, $paths);
         $operationId = strtolower($httpCode) . implode('', $paths);
         $i           = '';
@@ -337,7 +337,7 @@ final class GuzzleOpenAPIConverter extends Command
                 $i++;
             }
         }
-        $operationId = $operationId . $i;
+        $operationId                = $operationId . $i;
         self::$models[$operationId] = [];
         self::$output->writeln("<info>Missing operationId for: $httpCode $path now using operationId $operationId</info>");
 
