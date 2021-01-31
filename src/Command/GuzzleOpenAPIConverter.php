@@ -211,10 +211,10 @@ final class GuzzleOpenAPIConverter extends Command
                             self::$output->writeln("<error>Missing schema type $httpMethod $path</error>");
                             continue;
                         }
-                        $parameters[$operationId] = [
+                        $parameters[$pathItemObjectParameter['name']] = [
                             'type'        => $pathItemObjectParameter['schema']['type'],
-                            'location'    => ('path' === $pathItemObjectParameter['in']) ? 'in' : 'query',
-                            'description' => (isset($pathItemObjectParameter)) ? $pathItemObjectParameter : '',
+                            'location'    => ('path' == $pathItemObjectParameter['in']) ? 'uri' : 'query',
+                            'description' => (isset($pathItemObjectParameter['description'])) ? $pathItemObjectParameter['description'] : '',
                             'required'    => (isset($pathItemObjectParameter['required'])) ? $pathItemObjectParameter['required'] : false,
                         ];
                     }
