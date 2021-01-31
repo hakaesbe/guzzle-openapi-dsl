@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Command;
 
 
+use Symfony\Component\Console\Input\InputArgument;
+
 /**
  * Class GuzzleOpenIdeHelper
  */
@@ -18,6 +20,7 @@ final class GuzzleOpenIdeHelper extends BaseCommand
     {
         $this->setName('generate-ide-helper');
         $this->setDescription('Generate guzzle service ide helper.');
+        $this->addArgument('path', InputArgument::REQUIRED, 'Path of the guzzle service file.');
     }
 
     /**
@@ -28,6 +31,8 @@ final class GuzzleOpenIdeHelper extends BaseCommand
     protected function executeCommand()
     : int
     {
+
+        $path = self::$input->getArgument('path');
 
         return self::SUCCESS;
     }

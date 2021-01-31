@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -49,6 +50,27 @@ class BaseCommand extends Command
     {
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Get path from command argument.
+     *
+     * @return string
+     */
+    protected function getPath()
+    : string
+    {
+        $path = self::$input->getArgument('path');
+
+        /** check file exists */
+        if (!file_exists($path)) {
+            $path = getcwd() . DIRECTORY_SEPARATOR . $path;
+            if (!file_exists($path)) {
+                throw new RuntimeException('File does not exist.');
+            }
+        }
+
+        return $path;
     }
 
     /**

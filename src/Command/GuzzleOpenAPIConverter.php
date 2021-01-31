@@ -60,27 +60,13 @@ final class GuzzleOpenAPIConverter extends BaseCommand
     protected function executeCommand()
     : int
     {
-        $path = self::$input->getArgument('path');
-
-        /** check file exists */
-        if (!file_exists($path)) {
-            $path = getcwd() . DIRECTORY_SEPARATOR . $path;
-            if (!file_exists($path)) {
-                throw new RuntimeException('File does not exist.');
-            }
-        }
-
+        $path     = $this->getPath();
         $document = $this->parseFile($path);
-
-        if (!$this->checkDocument($document)) {
-            throw new RuntimeException('Invalid or not supported openapi document.');
-        }
 
         $this->parseTopLevelAttributes($document);
         $this->parseOperations($document);
         $this->parseModels($document);
         $this->writeGuzzleServiceDescriber();
-
 
         return self::SUCCESS;
     }
@@ -108,6 +94,10 @@ final class GuzzleOpenAPIConverter extends BaseCommand
             $parsedContent = Yaml::parse($content);
         } else {
             $parsedContent = json_decode($content);
+        }
+
+        if (!$this->checkDocument($parsedContent)) {
+            throw new RuntimeException('Invalid or not supported openapi document.');
         }
 
         return $parsedContent;
