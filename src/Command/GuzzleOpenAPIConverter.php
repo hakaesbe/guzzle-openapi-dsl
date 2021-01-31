@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
 
 /**
  * Class GuzzleOpenAPIConverter
  */
-final class GuzzleOpenAPIConverter extends Command
+final class GuzzleOpenAPIConverter extends BaseCommand
 {
     /** @var string */
     const REF_SCHEMAS = 'schemas';
@@ -23,14 +20,11 @@ final class GuzzleOpenAPIConverter extends Command
     /** @var string */
     const REF_PARAMETERS = 'parameters';
 
-    /** @var \Symfony\Component\Console\Input\InputInterface|null */
-    private static ?InputInterface $input = null;
-
-    /** @var \Symfony\Component\Console\Output\OutputInterface|null */
-    private static ?OutputInterface $output = null;
-
     /** @var string */
     private static string $name = '';
+
+    /** @var string */
+    private static string $defaultResponseLocation = 'json';
 
     /** @var string */
     private static string $apiVersion = '';
@@ -48,7 +42,15 @@ final class GuzzleOpenAPIConverter extends Command
     private static array $operations = [];
 
     /** @var array */
-    private static array $models = [];
+    private static array $models
+        = [
+            'getResponse' => [
+                'type'                 => 'object',
+                'additionalProperties' => [
+                    'location' => 'json'
+                ]
+            ]
+        ];
 
     /**
      * In this method setup command, description, and its parameters
@@ -62,40 +64,20 @@ final class GuzzleOpenAPIConverter extends Command
     }
 
     /**
-     * Here all logic happens
-     *
-     * @param \Symfony\Component\Console\Input\InputInterface   $input
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * Executes the current command.
      *
      * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function executeCommand()
     : int
     {
-        self::$input  = $input;
-        self::$output = $output;
-
-        $path = $input->getArgument('path');
-
-        /** check file exists */
-        if (!file_exists($path)) {
-            $path = getcwd() . DIRECTORY_SEPARATOR . $path;
-            if (!file_exists($path)) {
-                throw new RuntimeException('File does not exist.');
-            }
-        }
-
+        $path     = $this->getPath();
         $document = $this->parseFile($path);
-
-        if (!$this->checkDocument($document)) {
-            throw new RuntimeException('Invalid or not supported openapi document.');
-        }
 
         $this->parseTopLevelAttributes($document);
         $this->parseOperations($document);
         $this->parseModels($document);
         $this->writeGuzzleServiceDescriber();
-
 
         return self::SUCCESS;
     }
@@ -122,7 +104,11 @@ final class GuzzleOpenAPIConverter extends Command
         if ('yaml' === $pathInfo['extension']) {
             $parsedContent = Yaml::parse($content);
         } else {
-            $parsedContent = json_decode($content);
+            $parsedContent = json_decode($content, true);
+        }
+
+        if (!$this->checkDocument($parsedContent)) {
+            throw new RuntimeException('Invalid or not supported openapi document.');
         }
 
         return $parsedContent;
@@ -141,30 +127,30 @@ final class GuzzleOpenAPIConverter extends Command
 
         /** check type */
         if (!is_array($document) || count($document) === 0) {
-            self::$output->writeln("<error>Invalid openAPI document: content cannot be parsed</error>");
+            self::writelnError("Invalid openAPI document: content cannot be parsed");
             return false;
         }
 
         /** check version */
         if (!isset($document['openapi']) || $document['openapi'] < 3) {
-            self::$output->writeln("<error>Invalid openAPI document: incompatible version detected</error>");
+            self::writelnError("Invalid openAPI document: incompatible version detected");
             return false;
         }
 
         /** check paths */
         if (!isset($document['paths']) || count($document['paths']) === 0) {
-            self::$output->writeln("<error>Invalid openAPI document: missing paths part</error>");
+            self::writelnError("Invalid openAPI document: missing paths part");
             return false;
         }
 
         /** check components */
         if (!isset($document['components'][self::REF_SCHEMAS]) || count($document['components'][self::REF_SCHEMAS]) === 0) {
-            self::$output->writeln("<error>Invalid openAPI document: missing components/schemas part</error>");
+            self::writelnError("Invalid openAPI document: missing components/schemas part");
         }
 
         /** check components */
         if (!isset($document['components'][self::REF_PARAMETERS]) || count($document['components'][self::REF_PARAMETERS]) === 0) {
-            self::$output->writeln("<info>Missing components/parameters part</info>");
+            self::writelnComment("Missing components/parameters part in openAPI file.");
         }
 
         return true;
@@ -188,7 +174,7 @@ final class GuzzleOpenAPIConverter extends Command
             self::$baseUrl = $url;
         }
         if (self::$input->hasArgument('baseUrl')) {
-            self::$baseUrl = (string) self::$input->getArgument('baseUrl');
+            self::$baseUrl = (string)self::$input->getArgument('baseUrl');
         }
     }
 
@@ -217,7 +203,7 @@ final class GuzzleOpenAPIConverter extends Command
                             continue;
                         }
                         if (!isset($pathItemObjectParameter['schema']['type'])) {
-                            self::$output->writeln("<error>Missing schema type $httpMethod $path</error>");
+                            self::writelnError("Missing schema type $httpMethod $path");
                             continue;
                         }
                         $parameters[$pathItemObjectParameter['name']] = [
@@ -229,8 +215,27 @@ final class GuzzleOpenAPIConverter extends Command
                     }
                 }
 
+                if (isset($pathItemObject['requestBody']['content'])) {
+                    foreach ($pathItemObject['requestBody']['content'] as $location => $content) {
+                        /** application/x-www-form-urlencoded */
+                        $location = 'body';
+                        if ('application/json' == $location) {
+                            $location = 'json';
+                        } elseif ('application/xml' == $location) {
+                            $location = 'xml';
+                        }
+                        if (isset($content['schema']['$ref'])) {
+                            $parameters['$ref'] = [
+                                '$ref'     => $this->convertRefToModel($content['schema']['$ref']),
+                                'location' => $location,
+                            ];
+                            break;
+                        }
+                    }
+                }
+
                 /** parse responses */
-                $responseModel  = null;
+                $responseModel  = 'getResponse';
                 $errorResponses = [];
                 if (isset($pathItemObject['responses'])) {
                     foreach ($pathItemObject['responses'] as $responseCode => $response) {
@@ -249,22 +254,19 @@ final class GuzzleOpenAPIConverter extends Command
                             }
                         }
                     }
-
                 }
 
                 self::$operations[$operationId] = [
-                    'name'                 => $operationId,
-                    'httpMethod'           => strtoupper($httpMethod),
-                    'uri'                  => $path,
-                    'responseModel'        => $responseModel,
-                    'notes'                => (isset($pathItemObject['summary'])) ? $pathItemObject['summary'] : null,
-                    'summary'              => (isset($pathItemObject['summary'])) ? $pathItemObject['summary'] : null,
-                    'documentationUrl'     => null,
-                    'deprecated'           => false,
-                    'data'                 => [],
-                    'parameters'           => $parameters,
-                    'additionalParameters' => null,
-                    'errorResponses'       => $errorResponses,
+                    'name'             => $operationId,
+                    'httpMethod'       => strtoupper($httpMethod),
+                    'uri'              => ('' != self::$basePath) ? rtrim(self::$basePath, '/') . '/' . ltrim($path, '/') : $path,
+                    'responseModel'    => $responseModel,
+                    'notes'            => (isset($pathItemObject['summary'])) ? $pathItemObject['summary'] : null,
+                    'summary'          => (isset($pathItemObject['summary'])) ? $pathItemObject['summary'] : null,
+                    'documentationUrl' => null,
+                    'deprecated'       => false,
+                    'parameters'       => $parameters,
+                    'errorResponses'   => $errorResponses,
                 ];
 
             }
@@ -314,10 +316,14 @@ final class GuzzleOpenAPIConverter extends Command
                         $property = $this->parseRecursiveItem($property);
                     }
                 }
+                if (!isset($ref['location'])) {
+                    $ref['location'] = self::$defaultResponseLocation;
+                }
                 if (isset($ref['type']) && isset($ref['properties'])) {
                     self::$models[$modelName] = [
                         'type'       => $ref['type'],
                         'properties' => $ref['properties'],
+                        'location'   => $ref['location'],
                     ];
                 } else {
                     self::$models[$modelName] = $ref;
@@ -383,7 +389,7 @@ final class GuzzleOpenAPIConverter extends Command
         }
         $operationId                = $operationId . $i;
         self::$models[$operationId] = [];
-        self::$output->writeln("<info>Missing operationId for: $httpCode $path now using operationId $operationId</info>");
+        self::writelnInfo("Missing operationId for: $httpCode $path now using operationId $operationId");
 
         return $operationId;
     }
@@ -418,7 +424,7 @@ final class GuzzleOpenAPIConverter extends Command
             'models'       => self::$models,
         ];
         $path                   = getcwd() . DIRECTORY_SEPARATOR . 'guzzle_service.json';
-        self::$output->writeln('<info>Writing guzzle service describer to: ' . $path . '</info>');
+        self::writelnInfo('Writing guzzle service describer to: ' . $path);
         file_put_contents($path, json_encode($guzzleServiceDescriber));
     }
 

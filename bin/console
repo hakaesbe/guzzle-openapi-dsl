@@ -8,6 +8,7 @@ $application = new Symfony\Component\Console\Application();
 
 // Register all Commands
 $application->add(new App\Command\GuzzleOpenAPIConverter());
+$application->add(new App\Command\GuzzleOpenIdeHelper());
 
 // Run it
 $application->run();
